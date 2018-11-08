@@ -21,7 +21,6 @@ namespace pim8.Controllers
         {
             OleDbDataAdapter da;
             OleDbConnection conn = null;
-            OleDbDataReader reader = null;
             DataSet ds = new DataSet();
             try
             {
@@ -32,12 +31,10 @@ namespace pim8.Controllers
 
                 OleDbCommand cmd =
                     new OleDbCommand("Select * FROM Tasks", conn);
-                //reader = cmd.ExecuteReader();
 
                 cmd.Connection = conn;
                 da = new OleDbDataAdapter(cmd);
                 da.Fill(ds);
-                //conn.Open();
                 cmd.ExecuteNonQuery();
 
                 datagrid.DataSource = ds;
@@ -51,7 +48,6 @@ namespace pim8.Controllers
             //        }
             finally
             {
-                if (reader != null) reader.Close();
                 if (conn != null) conn.Close();
             }
         }
@@ -86,8 +82,8 @@ namespace pim8.Controllers
             cmd.Connection = conn;
 
             int ID = (int)datagrid.DataKeys[(int)e.Item.ItemIndex];
-            cmd.CommandText = "Delete from Tasks where ID=" + ID;
-            cmd.Connection.Open();
+            cmd.CommandText = "Delete from Tasks where ID = @ID";
+            cmd.Parameters.AddWithValue("@ID", ID);
             cmd.ExecuteNonQuery();
             cmd.Connection.Close();
             datagrid.EditItemIndex = -1;
@@ -99,30 +95,38 @@ namespace pim8.Controllers
 
             int ID = (int)datagrid.DataKeys[(int)e.Item.ItemIndex];
 
-            string name = ((TextBox)e.Item.Cells[1].Controls[0]).Text;
-            string dateTimeEnd = ((TextBox)e.Item.Cells[2].Controls[0]).Text;
+            string name = ((TextBox)e.Item.Cells[0].Controls[0]).Text;
+            string dateTimeEnd = ((TextBox)e.Item.Cells[1].Controls[0]).Text;
             string dateTimeStart = ((TextBox)e.Item.Cells[2].Controls[0]).Text;
+            string noticy = ((TextBox)e.Item.Cells[3].Controls[0]).Text;
 
-
-            string sql =
-                "UPDATE Tasks SET TaskName=\"" + name +
-                "\", DateTimeEnd=\"" + dateTimeEnd +
-                "\", DateTimeStart=\"" + dateTimeStart +
-                "\"" +
-                " WHERE ID=" + ID;
-            ExecuteNonQuery(sql);
-
-            string description = null;
-            if ((description = ((TextBox)e.Item.Cells[2].Controls[0]).Text) != null)
+            OleDbConnection conn = null;
+            try
             {
-                string sqlD =
-                "UPDATE Tasks SET Description=\"" + description +
-                " WHERE ID=" + ID;
-                ExecuteNonQuery(sqlD);
-            }
+                conn = new OleDbConnection(
+                    "Provider=Microsoft.Jet.OLEDB.4.0; " +
+                    "Data Source=" + Server.MapPath("../App_Data/PIM8.mdb"));
+                conn.Open();
 
-            datagrid.EditItemIndex = -1;
-            ReadRecords();
+                OleDbCommand cmd = conn.CreateCommand();
+                cmd.CommandText = "UPDATE Tasks SET TaskName = @TaskName, DateTimeEnd = @DateTimeEnd, " +
+                    "DateTimeStart = @DateTimeStart, noticy = @noticy " +
+                    "WHERE ID = @ID";
+
+                cmd.Parameters.AddWithValue("@TaskName", name);
+                cmd.Parameters.AddWithValue("@DateTimeEnd", dateTimeEnd);
+                cmd.Parameters.AddWithValue("@DateTimeStart", dateTimeStart);
+                cmd.Parameters.AddWithValue("@Noticy", noticy);
+                cmd.Parameters.AddWithValue("@ID", ID);
+
+
+                cmd.ExecuteNonQuery();
+            }finally
+            {
+                if (conn != null) conn.Close();
+                datagrid.EditItemIndex = -1;
+                ReadRecords();
+            }
 
         }
         private void ExecuteNonQuery(string sql)
@@ -151,12 +155,7 @@ namespace pim8.Controllers
         }
         protected void btnAddTask_Click(object sender, System.EventArgs e)
         {
-            string sql =
-                "INSERT INTO Tasks (TaskName, DateTimeEnd, DateTimeStart, Description" +
-                "VALUES (\"new\", \"new\")";
-
-            ExecuteNonQuery(sql);
-            ReadRecords();
+            Response.Redirect("~/Controllers/Create.aspx");
         }
     }
 }

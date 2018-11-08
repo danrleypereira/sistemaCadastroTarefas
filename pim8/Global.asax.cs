@@ -23,6 +23,7 @@ namespace pim8
         public static void RegisterRoutes(RouteCollection routes)
         {
             routes.MapPageRoute("webform1", "Controllers/{locale}", "~/Controllers/WebForm1.aspx");
+            routes.MapPageRoute("createForm", "Controllers/{locale}", "~/Controllers/Create.aspx");
         }
     }
 }
