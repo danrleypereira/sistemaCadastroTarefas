@@ -7,8 +7,10 @@
     <title></title>
     <script type="text/javascript" src="../Scripts/jquery-3.3.1.min.js"></script>
     <script type="text/javascript" src="../Scripts/jquery-ui-1.12.1.min.js"></script>
-    <link rel="stylesheet" href="../Content/themes/base/datepicker.css">
-    <link rel="stylesheet" href="../Content/themes/base/jquery-ui.min.css">
+    <link rel="stylesheet" href="../Content/themes/base/datepicker.css"/>
+    <link rel="stylesheet" href="../Content/themes/base/jquery-ui.min.css"/>
+         <link rel="stylesheet" href="../Content/themes/base/button.css"/>
+    <link rel="stylesheet" href="../Content/themes/bootstrap-theme.css"/>
 
     <script type="text/javascript">
         $(function () {
@@ -41,8 +43,9 @@
             </tr>  
         </table>  
 
-                <asp:Button ID="btnReset" runat="server" Text="Reset" OnClick="btnReset_Click" />  
-                <asp:Button ID="btnSubmit" runat="server" Text="OK" OnClick="btnSubmit_Click" />
+                <asp:Button class="ui-button btn-warning" ID="btnReset" runat="server" Text="Resetar" OnClick="btnReset_Click" />  
+                <asp:Button class="ui-button btn-success" ID="btnSubmit" runat="server" Text="OK" OnClick="btnSubmit_Click" />
+                <asp:Button class="ui-button" ID="btnCancel" runat="server" Text="Cancelar" OnClick="btnCancel_Click" />
         </div>
 
 

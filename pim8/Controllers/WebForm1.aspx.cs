@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using System.Web.UI;
 using System.Web.UI.WebControls;
 
 using System.Data.OleDb;
 using System.Data;
+using System.Collections.Generic;
+using System.Net;
 
 namespace pim8.Controllers
 {
@@ -15,6 +13,40 @@ namespace pim8.Controllers
         private void Page_Load(object sender, System.EventArgs e)
         {
             if (!IsPostBack) ReadRecords();
+            alertEndTasks();
+        }
+
+        private void alertEndTasks()
+        {
+            List<Models.Task> outDateTasks = new List<Models.Task>();
+            OleDbConnection conn = null;
+            conn = new OleDbConnection(
+                    "Provider=Microsoft.Jet.OLEDB.4.0; " +
+                    "Data Source=" + Server.MapPath("../App_Data/PIM8.mdb"));
+            conn.Open();
+            OleDbCommand cmd =
+                new OleDbCommand("Select * FROM Tasks", conn);
+            cmd.Connection = conn;
+
+            //cmd.CommandText = "SELECT FROM Tasks WHEN `DateTimeEnd` < @today";
+            cmd.CommandText = "SELECT * FROM Tasks WHERE (((tasks.[DateTimeEnd])<@today));";
+            cmd.Parameters.AddWithValue("@today", (string)DateTime.Now.ToShortDateString());
+            OleDbDataReader reader = cmd.ExecuteReader();
+            while(reader.Read())
+            {
+                Models.Task taskOutdatedFromDB = new Models.Task();
+                taskOutdatedFromDB.fieldName = (string)reader["TaskName"];
+                taskOutdatedFromDB.dateTimeEnd = (DateTime)reader["DateTimeEnd"];
+                outDateTasks.Add(taskOutdatedFromDB);
+            }
+            string textToAlert = "";
+            foreach (Models.Task taskOutDated in outDateTasks)
+            {
+                textToAlert = textToAlert + "Nome da tarefa: " + taskOutDated.fieldName + "\\n" +
+                        "Dia de vencimento: " + taskOutDated.dateTimeEnd.ToString() + "\\n\\n";
+            }
+            Response.Write("<script>alert('"+ textToAlert +"')</script>");
+            cmd.Connection.Close();
         }
 
         private void ReadRecords()
@@ -100,33 +132,51 @@ namespace pim8.Controllers
             string dateTimeStart = ((TextBox)e.Item.Cells[2].Controls[0]).Text;
             string noticy = ((TextBox)e.Item.Cells[3].Controls[0]).Text;
 
-            OleDbConnection conn = null;
             try
             {
-                conn = new OleDbConnection(
-                    "Provider=Microsoft.Jet.OLEDB.4.0; " +
-                    "Data Source=" + Server.MapPath("../App_Data/PIM8.mdb"));
-                conn.Open();
+                if (DateTime.Parse(dateTimeEnd) < DateTime.Parse(dateTimeStart))
+                {
+                    Response.Write("<script>alert('Data de inicio começa depois da data do fim.')</script>");
+                } else if (name == "") {
+                    Response.Write("<script>alert('Nome da atividade em branco!')</script>");
+                }
+                else {
+                    OleDbConnection conn = null;
+                    try
+                    {
+                        conn = new OleDbConnection(
+                            "Provider=Microsoft.Jet.OLEDB.4.0; " +
+                            "Data Source=" + Server.MapPath("../App_Data/PIM8.mdb"));
+                        conn.Open();
 
-                OleDbCommand cmd = conn.CreateCommand();
-                cmd.CommandText = "UPDATE Tasks SET TaskName = @TaskName, DateTimeEnd = @DateTimeEnd, " +
-                    "DateTimeStart = @DateTimeStart, noticy = @noticy " +
-                    "WHERE ID = @ID";
+                        OleDbCommand cmd = conn.CreateCommand();
+                        cmd.CommandText = "UPDATE Tasks SET TaskName = @TaskName, DateTimeEnd = @DateTimeEnd, " +
+                            "DateTimeStart = @DateTimeStart, noticy = @noticy " +
+                            "WHERE ID = @ID";
 
-                cmd.Parameters.AddWithValue("@TaskName", name);
-                cmd.Parameters.AddWithValue("@DateTimeEnd", dateTimeEnd);
-                cmd.Parameters.AddWithValue("@DateTimeStart", dateTimeStart);
-                cmd.Parameters.AddWithValue("@Noticy", noticy);
-                cmd.Parameters.AddWithValue("@ID", ID);
+                        cmd.Parameters.AddWithValue("@TaskName", name);
+                        cmd.Parameters.AddWithValue("@DateTimeEnd", dateTimeEnd);
+                        cmd.Parameters.AddWithValue("@DateTimeStart", dateTimeStart);
+                        cmd.Parameters.AddWithValue("@Noticy", noticy);
+                        cmd.Parameters.AddWithValue("@ID", ID);
 
 
-                cmd.ExecuteNonQuery();
-            }finally
-            {
-                if (conn != null) conn.Close();
-                datagrid.EditItemIndex = -1;
-                ReadRecords();
+                        cmd.ExecuteNonQuery();
+                    }
+                    finally
+                    {
+                        if (conn != null) conn.Close();
+                        datagrid.EditItemIndex = -1;
+                        ReadRecords();
+                    }
+                }
             }
+            catch(Exception dateException)
+            {
+                
+            }
+
+
 
         }
         private void ExecuteNonQuery(string sql)
@@ -156,6 +206,29 @@ namespace pim8.Controllers
         protected void btnAddTask_Click(object sender, System.EventArgs e)
         {
             Response.Redirect("~/Controllers/Create.aspx");
+        }
+        protected void Btnpdf_Click(object sender, EventArgs e)
+
+        {
+
+            string FilePath = Server.MapPath("../Content/PIM8-ERICKBUENOSILVA.pdf");
+
+            WebClient User = new WebClient();
+
+            Byte[] FileBuffer = User.DownloadData(FilePath);
+
+            if (FileBuffer != null)
+
+            {
+
+                Response.ContentType = "application/pdf";
+
+                Response.AddHeader("content-length", FileBuffer.Length.ToString());
+
+                Response.BinaryWrite(FileBuffer);
+
+            }
+
         }
     }
 }
